@@ -15,16 +15,15 @@ describe("app",function() {
 
   describe("#listen",function() {
     var server = http.createServer(app);
-    it('should return an http.Server', function (done){
-      expect(server, done).to.be.instanceof(http.Server);
+    it('should return an http.Server', function (){
+      expect(server).to.be.instanceof(http.Server);
     });
 
     it('responds to /foo with 404', function (done){
       var server = http.createServer(app)
         , port = 7000;
-      server.listen(port);
+      server.listen(port, done);
       request("http://localhost:%d", port).get("/foo").expect(404);
-      server.listen(done);
     });
   });
 });
