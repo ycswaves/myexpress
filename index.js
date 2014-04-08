@@ -1,56 +1,48 @@
-var http = require('http');
+var http = require('http')
+  , Layer = require('lib/layer');
 
 module.exports = function(){
 
   var myexpress = function(req, res) {
-
+    next();
     var stackSize = myexpress.stack.length;
 
     function next(err){
-      myexpress.stackPointer++;
-      if(myexpress.stackPointer >= stackSize
-         && !err){ //handle end of middleware chain
+      layer = myexpress.stack[myexpress.stackPointer++];
+
+      if(!layer && !err){
         res.statusCode = 404;
         res.end();
       }
 
       if(err){
-
-        if(myexpress.stack[myexpress.stackPointer].length < 4){
+        if(layer.handle.length < 4){
           next(err); //if it's not a error handle middleware, pass down the stack
         }
-        else if(myexpress.stackPointer < stackSize){
-          //if a error handle middleware is available
-          myexpress.stack[myexpress.stackPointer](err,req, res, next);
-        }
         else{
+          layer.handle(err, req, res, next);
+        }
+      }
+      else{
+        try {
+          if(layer.match(req.url)){
+            if(layer.handle.length === 4){
+              next();
+            }
+            else{
+              layer.handle(req, res, next);
+            }
+          }
+          else{
+            next();
+          }
+        } catch(e) {
+          //console.log(e);
           res.statusCode = 500;
           res.end();
         }
       }
-      else{
-        if(myexpress.stack[myexpress.stackPointer].length<4){
-          myexpress(req, res);
-        }
-        else{
-          next();
-        }
-      }
     } //end of next()
-
-
-    if( stackSize > 0 && myexpress.stackPointer < stackSize){
-      try {
-        myexpress.stack[myexpress.stackPointer](req, res, next);
-      } catch (e) {
-        res.statusCode = 500;
-        res.end();
-      }
-    }
-    else{
-      res.statusCode = 404;
-      res.end();
-    }
   };
 
   myexpress.stack = [];
@@ -60,14 +52,23 @@ module.exports = function(){
     return http.createServer(this).listen(port,callback);
   }
 
-  myexpress.use = function(fn){
-    if(typeof fn.stack !== 'undefined'){
-      for (var i in fn.stack ){
-        myexpress.stack.push(fn.stack[i]);
+  myexpress.use = function(path, fn){
+    if(typeof path.stack !== 'undefined'){
+      for (var i in path.stack ){
+        myexpress.stack.push(path.stack[i]);
       }
     }
     else{
-      myexpress.stack.push(fn);
+      var layerPath;
+      if(typeof path === 'function'){
+        layerPath = '/';
+        fn = path;
+      }
+      else{
+        layerPath = path;
+      }
+      var layer = new Layer(layerPath, fn);
+      myexpress.stack.push(layer);
     }
   }
   return myexpress;
