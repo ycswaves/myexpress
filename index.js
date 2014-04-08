@@ -31,6 +31,7 @@ module.exports = function(){
             }
             else{
               layer.handle(req, res, next);
+              myexpress.stackPointer = 0;
             }
           }
           else{
