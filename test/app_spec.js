@@ -162,5 +162,60 @@ describe('Implement Error Handling', function() {
     app.use(e1);
     request(app).get('/').expect('e1').end(done);
   });
+});
 
+describe("The middlewares called should match request path:",function() {
+  var app;
+  before(function() {
+    app = express();
+    app.use("/foo",function(req,res,next) {
+      res.end("foo");
+    });
+
+    app.use("/",function(req,res) {
+      res.end("root");
+    });
+  });
+
+  it("returns root for GET /",function(done) {
+    request(app).get("/").expect("root").end(done);
+  });
+
+  it("returns foo for GET /foo",function(done) {
+    request(app).get("/foo").expect("foo").end(done);
+  });
+
+  it("returns foo for GET /foo/bar",function(done) {
+    request(app).get("/foo/bar").expect("foo").end(done);
+  });
+});
+
+describe("The error handlers called should match request path:",function() {
+  var app;
+  before(function() {
+    app = express();
+    app.use("/foo",function(req,res,next) {
+      throw "boom!"
+    });
+
+    app.use("/foo/a",function(err,req,res,next) {
+      res.end("error handled /foo/a");
+    });
+
+    app.use("/foo/b",function(err,req,res,next) {
+      res.end("error handled /foo/b");
+    });
+  });
+
+  it("handles error with /foo/a",function(done) {
+    request(app).get("/foo/a").expect("error handled /foo/a").end(done);
+  });
+
+  it("handles error with /foo/b",function(done) {
+    request(app).get("/foo/b").expect("error handled /foo/b").end(done);
+  });
+
+  it("returns 500 for /foo",function(done) {
+    request(app).get("/foo").expect(500).end(done);
+  });
 });

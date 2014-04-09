@@ -5,17 +5,24 @@ module.exports = function(){
 
   var myexpress = function(req, res) {
     next();
-    var stackSize = myexpress.stack.length;
 
     function next(err){
       layer = myexpress.stack[myexpress.stackPointer++];
 
-      if(!layer && !err){
-        res.statusCode = 404;
-        res.end();
-      }
 
-      if(err){
+      if(!layer){
+        if(!err){
+          res.statusCode = 404;
+          res.end();
+          return;
+        }
+        else{
+          res.statusCode = 500;
+          res.end();
+          return;
+        }
+      }
+      else if(err){
         if(layer.handle.length < 4){
           next(err); //if it's not a error handle middleware, pass down the stack
         }
@@ -26,6 +33,7 @@ module.exports = function(){
       else{
         try {
           if(layer.match(req.url)){
+            req.params = layer.match(req.url).params;
             if(layer.handle.length === 4){
               next();
             }
@@ -38,9 +46,7 @@ module.exports = function(){
             next();
           }
         } catch(e) {
-          //console.log(e);
-          res.statusCode = 500;
-          res.end();
+          next(e);
         }
       }
     } //end of next()
