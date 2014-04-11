@@ -1,5 +1,7 @@
 var http = require('http')
-  , Layer = require('lib/layer');
+  , Layer = require('lib/layer')
+  , makeRoute = require('lib/route')
+  , methods = require('methods');
 
 module.exports = function(){
 
@@ -36,6 +38,11 @@ module.exports = function(){
       else{
         try {
           if(layer.match(req.url)){
+            if(layer.route != undefined &&
+               layer.route.verb != req.method.toLowerCase()){
+              next();
+              return;
+            }
             //console.log('match');
             req.params = layer.match(req.url).params;
             if(layer.handle.length === 4){
@@ -94,6 +101,15 @@ module.exports = function(){
       }
     }
   }
+
+  methods.forEach(function(method){
+    myexpress[method] = function(path, handler){
+      var layer = new Layer(path, handler, true);
+      layer.route = new makeRoute(method, handler);
+      myexpress.stack.push(layer);
+    }
+  });
+
   myexpress.handle = myexpress;
   return myexpress;
 }

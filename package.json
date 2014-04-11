@@ -17,6 +17,7 @@
     "chai": "^1.9.1",
     "mocha": "^1.18.2",
     "supertest": "^0.10.0",
-    "connect": "^3.0.0-rc.1"
+    "connect": "^3.0.0-rc.1",
+    "methods": "^0.1.0"
   }
 }
