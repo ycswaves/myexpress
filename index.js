@@ -38,12 +38,6 @@ module.exports = function(){
       else{
         try {
           if(layer.match(req.url)){
-            if(layer.route != undefined &&
-               layer.route.verb != req.method.toLowerCase()){
-              next();
-              return;
-            }
-            //console.log('match');
             req.params = layer.match(req.url).params;
             if(layer.handle.length === 4){
               next();
@@ -60,6 +54,7 @@ module.exports = function(){
             next();
           }
         } catch(e) {
+          //console.log(e);
           next(e);
         }
       }
@@ -73,40 +68,52 @@ module.exports = function(){
     return http.createServer(this).listen(port,callback);
   }
 
+  myexpress.route = function(path, handler, method){
+    var rt = makeRoute();
+    if(handler && method){
+      rt.use(method, handler);
+    }
+    myexpress.use(path, rt);
+    return rt;
+  }
+
   myexpress.use = function(path, fn){
-    if(typeof path.stack !== 'undefined'){ // if 'path' is an app
+    if(typeof path.stack !== 'undefined' && !path.isRoute){ // if 'path' is an app
       for (var i in path.stack ){
         myexpress.stack.push(path.stack[i]);
       }
     }
-    else{
+    else{ // if path is not an app
       var layerPath;
-      if(typeof path === 'function'){// a handler without path
+      if(typeof path === 'function'){ // a middleware without path
         var layer = new Layer('/', path);
         myexpress.stack.push(layer);
       }
-      else{// a handler with path, fn can be a handler or an app
-        if(typeof fn.stack !== 'undefined'){ // if fn is an app
+      else if(path.isRoute){
+        var layer = new Layer('/', path, true);
+        myexpress.stack.push(layer);
+      }
+      else{// a handler with path, fn can be a handler/app/route
+        if(!fn.isRoute && typeof fn.stack !== 'undefined'){ // if fn is an app
           for (var j in fn.stack ){
             fn.stack[j].path = path+fn.stack[j].path;
             fn.stack[j].embed = true;
             myexpress.stack.push(fn.stack[j]);
           }
         }
-        else{ // fn is a handler
+        else{ // fn is a handler OR route
           layerPath = path;
-          var layer = new Layer(layerPath, fn);
+          var layer = new Layer(layerPath, fn, fn.isRoute);
           myexpress.stack.push(layer);
         }
       }
     }
   }
 
-  methods.forEach(function(method){
+  methods.concat('all').forEach(function(method){
     myexpress[method] = function(path, handler){
-      var layer = new Layer(path, handler, true);
-      layer.route = new makeRoute(method, handler);
-      myexpress.stack.push(layer);
+      myexpress.route(path, handler, method);
+      return myexpress;
     }
   });
 
