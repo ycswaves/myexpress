@@ -1,11 +1,15 @@
 var http = require('http')
   , Layer = require('lib/layer')
   , makeRoute = require('lib/route')
-  , methods = require('methods');
+  , methods = require('methods')
+  , request = require('lib/request')
+  , response = require('lib/response');
 
 module.exports = function(){
 
   var myexpress = function(req, res) {
+    myexpress.monkey_patch(req, res);
+    req.app = myexpress;
     next();
     myexpress.stackPointer = 0;
 
@@ -44,6 +48,7 @@ module.exports = function(){
             }
             else{
               if(layer.embed){
+                req.app = layer.app;
                 req.url = req.url.replace(/^\/[^\/]*/,''); //trim prefix
               }
               layer.handle(req, res, next);
@@ -80,6 +85,8 @@ module.exports = function(){
   myexpress.use = function(path, fn){
     if(typeof path.stack !== 'undefined' && !path.isRoute){ // if 'path' is an app
       for (var i in path.stack ){
+        path.stack[i].embed = true;
+        path.stack[i].app = path;
         myexpress.stack.push(path.stack[i]);
       }
     }
@@ -98,6 +105,7 @@ module.exports = function(){
           for (var j in fn.stack ){
             fn.stack[j].path = path+fn.stack[j].path;
             fn.stack[j].embed = true;
+            fn.stack[j].app = fn;
             myexpress.stack.push(fn.stack[j]);
           }
         }
@@ -118,5 +126,12 @@ module.exports = function(){
   });
 
   myexpress.handle = myexpress;
+
+  myexpress.monkey_patch = function(req,res){
+    req.__proto__ = request;
+    req.res = res;
+    res.__proto__ = response;
+    res.req = req;
+  }
   return myexpress;
 }
