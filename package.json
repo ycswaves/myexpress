@@ -18,6 +18,8 @@
     "mocha": "^1.18.2",
     "supertest": "^0.10.0",
     "connect": "^3.0.0-rc.1",
-    "methods": "^0.1.0"
+    "methods": "^0.1.0",
+    "mime": "^1.2.11",
+    "accepts": "^1.0.1"
   }
 }
