@@ -127,7 +127,12 @@ module.exports = function(){
 
   myexpress.handle = myexpress;
 
-  myexpress.monkey_patch = function(req,res){
+  myexpress._factories = {};
+  myexpress.factory = function(name, fn){
+    myexpress._factories[name] = fn;
+  }
+
+  myexpress.monkey_patch = function(req, res){
     req.__proto__ = request;
     req.res = res;
     res.__proto__ = response;
