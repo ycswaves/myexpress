@@ -3,7 +3,8 @@ var http = require('http')
   , makeRoute = require('lib/route')
   , methods = require('methods')
   , request = require('lib/request')
-  , response = require('lib/response');
+  , response = require('lib/response')
+  , dInjector = require('lib/injector');
 
 module.exports = function(){
 
@@ -130,6 +131,10 @@ module.exports = function(){
   myexpress._factories = {};
   myexpress.factory = function(name, fn){
     myexpress._factories[name] = fn;
+  }
+  myexpress.inject = function(handler){
+    //console.log(this);
+    return dInjector(handler, this);
   }
 
   myexpress.monkey_patch = function(req, res){
